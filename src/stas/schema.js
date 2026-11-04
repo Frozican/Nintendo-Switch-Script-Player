@@ -1,7 +1,7 @@
 export const STAS_FORMAT = "STAS";
 export const STAS_VERSION = 1;
 export const STAS_FPS = 60;
-export const BUTTONS = Object.freeze(["A","B","X","Y","L","R","PLUS","MINUS"]);
+export const BUTTONS = Object.freeze(["A","B","X","Y","L","ZL","R","ZR","PLUS","MINUS"]);
 export const MOTIONS = Object.freeze(["Neutral","Tilt Up","Tilt Down","Tilt Left","Tilt Right","Rotate X+","Rotate X−","Rotate Y+","Rotate Y−","Rotate Z+","Rotate Z−","Shake"]);
 
 export function createFrame(previous = null) {
