@@ -1,0 +1,24 @@
+import { BUTTONS as buttons, MOTIONS as motions, createFrame } from "./stas/schema.js";
+import { parseStasText, serializeStas } from "./stas/parser.js";
+import { ScriptPlayer } from "./runtime/player.js";
+let frames=[createFrame()],selected=0,editing=null,live={x:0,y:0},playing=false,paused=false;
+const player=new ScriptPlayer({
+ onFrame:({index,state})=>{selectRow(index);$("playStatus").textContent="Frame "+String(index).padStart(4,"0")+" · "+(state.buttons.join(", ")||"No buttons")+" · L("+state.leftStick.x+", "+state.leftStick.y+") · R("+state.rightStick.x+", "+state.rightStick.y+")";},
+ onState:state=>{if(state==="playing"){playing=true;paused=false;$("playBtn").textContent="▶ Playing";$("pauseBtn").textContent="Ⅱ Pause";}else if(state==="paused"){paused=true;$("pauseBtn").textContent="▶ Resume";}else{playing=false;paused=false;$("playBtn").textContent="▶ Play preview";$("pauseBtn").textContent="Ⅱ Pause";}if(state==="finished")$("playStatus").textContent="Preview complete";if(state==="stopped")$("playStatus").textContent="Stopped";}
+});
+function openStick(i,side){editing={i,side};live={...frames[i][side]};$('modalTitle').textContent=(side==='left'?'Left':'Right')+' Stick · Frame '+i;$('stickModal').classList.add('open');updateKnob();}
+function closeStick(){$('stickModal').classList.remove('open');editing=null;}
+$('closeModal').onclick=closeStick;$('stickModal').addEventListener('click',e=>{if(e.target===$('stickModal'))closeStick();});
+function updateKnob(){const pad=$('stickPad'),knob=$('knob'),size=pad.clientWidth,limit=(size-66)/2,px=live.x/100*limit,py=-live.y/100*limit;knob.style.left=(size/2+px)+'px';knob.style.top=(size/2+py)+'px';$('liveX').textContent=live.x;$('liveY').textContent=live.y;}
+function positionFromPointer(e){const r=$('stickPad').getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,lim=(r.width-66)/2;let x=(e.clientX-cx)/lim*100,y=-(e.clientY-cy)/lim*100;const len=Math.hypot(x,y);if(len>100){x=x/len*100;y=y/len*100;}live={x:Math.round(x),y:Math.round(y)};updateKnob();}
+let dragging=false;$('stickPad').addEventListener('pointerdown',e=>{dragging=true;$('stickPad').setPointerCapture(e.pointerId);positionFromPointer(e);});$('stickPad').addEventListener('pointermove',e=>{if(dragging)positionFromPointer(e);});$('stickPad').addEventListener('pointerup',()=>dragging=false);$('stickPad').addEventListener('pointercancel',()=>dragging=false);
+$('repeatInModal').onclick=()=>{if(editing&&editing.i>0){live={...frames[editing.i-1][editing.side]};updateKnob();}};$('resetStick').onclick=()=>{live={x:0,y:0};updateKnob();};$('applyStick').onclick=()=>{if(editing){frames[editing.i][editing.side]={...live};render();closeStick();}};
+function save(){localStorage.setItem('switch-script-player',JSON.stringify({name:$('scriptName').value,frames}));$('playStatus').textContent='Saved locally';}
+$('saveBtn').onclick=save;$('newBtn').onclick=()=>{if(!confirm('Create a new script? Unsaved changes will be lost.'))return;frames=[createFrame()];selected=0;$('scriptName').value='Untitled Script';render();};
+$('exportBtn').onclick=()=>{try{const data=serializeStas({name:$('scriptName').value,frames});const blob=new Blob([data],{type:'application/x-switch-script'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=($('scriptName').value||'switch-script').replace(/[^a-z0-9-_]+/gi,'-')+'.stas';a.click();URL.revokeObjectURL(url);}catch(err){alert('Could not export script: '+err.message);}};
+$('importBtn').onclick=()=>$('fileInput').click();$('fileInput').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const d=parseStasText(await file.text());frames=d.frames.map((f,i)=>({...createFrame(),id:String(Date.now()+i),buttons:[...f.buttons],left:{...f.left},right:{...f.right},motion:f.motion}));$('scriptName').value=d.name||'Imported Script';selected=0;render();$('playStatus').textContent='Imported '+frames.length+' frames';}catch(err){alert('Could not import script: '+err.message);}e.target.value='';};
+$('playBtn').onclick=()=>{if(playing)return;try{$('playStatus').textContent='Starting preview…';player.play(frames,{speed:Number($('speed').value)});}catch(err){$('playStatus').textContent=err.message;}};
+$('pauseBtn').onclick=()=>{if(paused)player.resume();else player.pause();};
+$('stopBtn').onclick=()=>{player.stop();$('playStatus').textContent='Stopped';};
+try{const saved=JSON.parse(localStorage.getItem('switch-script-player'));if(saved&&Array.isArray(saved.frames)&&saved.frames.length){frames=saved.frames.map((f,i)=>({...createFrame(),...f}));$('scriptName').value=saved.name||'Untitled Script';}}catch(e){}
+render();
