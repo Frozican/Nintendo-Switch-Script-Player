@@ -11,5 +11,5 @@ export class FrameClock {
   resume() { if (this.pausedAt !== null) { this.pausedDuration += this.now() - this.pausedAt; this.pausedAt = null; } }
   elapsed() { const end = this.pausedAt ?? this.now(); return Math.max(0, end - this.startTime - this.pausedDuration); }
   dueFrame() { return Math.floor(this.elapsed() / this.frameDuration); }
-  delayUntilNextFrame() { return Math.max(0, (this.nextFrame + 1) * this.frameDuration - this.elapsed()); }
+  delayUntilNextFrame() { return Math.max(0, this.nextFrame * this.frameDuration - this.elapsed()); }
 }
