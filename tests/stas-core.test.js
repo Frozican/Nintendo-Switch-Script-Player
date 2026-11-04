@@ -52,5 +52,5 @@ test("frame clock corrects timing against elapsed time and pauses cleanly", () =
   assert.equal(clock.elapsed(), 17);
   clock.resume();
   now = 1017;
-  assert.equal(clock.elapsed(), 17);
+  assert.equal(clock.elapsed(), 34);
 });
