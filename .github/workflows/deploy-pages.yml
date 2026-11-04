@@ -5,14 +5,15 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# The build job only needs read access. Deployment permissions are granted
+# exclusively to the deploy job below.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
+# Never cancel a deployment that is already publishing production Pages.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -38,6 +39,9 @@ jobs:
           path: .
 
   deploy:
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -46,4 +50,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
