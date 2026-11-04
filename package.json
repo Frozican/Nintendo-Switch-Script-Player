@@ -1,0 +1,6 @@
+{
+  "name": "nintendo-switch-script-player",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test" }
+}
